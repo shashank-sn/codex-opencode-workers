@@ -1,6 +1,6 @@
 # Packaging
 
-This repository is a private, local Codex plugin distribution. It is not configured for npm publishing.
+This repository is a public source distribution for a local Codex plugin. It is not configured for npm publishing.
 
 ## Verify
 
@@ -17,7 +17,7 @@ The test suite uses a fake local OpenCode HTTP server. It does not read credenti
 npm run pack
 ```
 
-The resulting `.tgz` is written to `dist/`. It contains the plugin manifest, MCP configuration, runtime source, skill, documentation, and non-secret configuration template. It excludes tests, audit receipts, local configuration, and build artifacts.
+The resulting `.tgz` is written to `dist/`. It contains the plugin manifest, MCP configuration, runtime source, skill, documentation, license, and non-secret configuration template. It excludes tests, audit receipts, local configuration, and build artifacts.
 
 ## Local installation boundary
 
