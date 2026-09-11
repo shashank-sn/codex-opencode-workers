@@ -1,0 +1,25 @@
+{
+  "name": "codex-opencode-workers",
+  "version": "0.1.4+codex.20260911073740",
+  "description": "Delegate bounded OpenCode model tasks to local OpenCode sessions from Codex.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Opencode Workers",
+    "shortDescription": "Delegate bounded local OpenCode workers.",
+    "longDescription": "A local MCP bridge for bounded OpenCode worker jobs with explicit consent, worktree isolation, and durable job receipts.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [
+      "MCP"
+    ],
+    "defaultPrompt": [
+      "Delegate a read-only investigation to my OpenCode worker.",
+      "Check the status of my OpenCode worker job.",
+      "Fetch the reviewed patch from my OpenCode worker job."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

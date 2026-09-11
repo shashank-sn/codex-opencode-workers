@@ -1,0 +1,13 @@
+{
+  "name": "codex-opencode-workers",
+  "version": "0.1.4",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --test server/test/*.test.mjs",
+    "start": "node server/src/index.mjs"
+  }
+}

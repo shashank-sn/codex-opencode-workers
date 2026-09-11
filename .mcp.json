@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "codex-opencode-workers": {
+      "command": "node",
+      "args": ["./server/src/index.mjs"],
+      "cwd": ".",
+      "env_vars": [
+        "OPENCODE_WORKERS_URL",
+        "OPENCODE_WORKERS_CONFIG",
+        "OPENCODE_WORKERS_ALLOWED_ROOTS",
+        "OPENCODE_WORKERS_STATE_DIR",
+        "OPENCODE_WORKERS_MODELS",
+        "OPENCODE_WORKERS_DEFAULT_MODEL"
+      ],
+      "tool_timeout_sec": 30
+    }
+  }
+}

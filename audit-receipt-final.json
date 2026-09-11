@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "local:/Users/shashank/Documents/Codex/2026-09-11/if/outputs/codex-opencode-workers",
+  "revision": "local-uncommitted-codex-opencode-workers",
+  "policy_revision": "AGENTS.md current workspace instructions",
+  "created_at": "2026-09-11T07:14:06.193864Z",
+  "complete": false,
+  "artifacts": [
+    {
+      "kind": "supporting",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/outputs/codex-opencode-workers/DESIGN.md",
+      "sha256": "d09b3f87f045bf1ca845123825fe06a03733de4dd50678dc0d6157e9fc9090b3"
+    },
+    {
+      "kind": "supporting",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/outputs/codex-opencode-workers/README.md",
+      "sha256": "6889f4a0a59d5fccd21ea50aa7faa725adf805cec76e9021c4fb95baa0684fb0"
+    },
+    {
+      "kind": "supporting",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/work/arena/judgment.md",
+      "sha256": "43cdc5e8c75fbed5239592245abb9d4e51c4b66e1270a0aeeed1c96009f5bf2d"
+    },
+    {
+      "kind": "review",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/work/codex-opencode-workers-review.json",
+      "sha256": "0e46059ff9d239702f004bad673dc03165e728e7c0a918f53ead748ea9dd1317"
+    },
+    {
+      "kind": "verification",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/work/codex-opencode-workers-verification.json",
+      "sha256": "2c2e28d0e7853b41eb8f943f598382592a94b480ba8d50c4d0fb6a094235e216"
+    },
+    {
+      "kind": "test-plan",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/work/codex-opencode-workers-test-plan.json",
+      "sha256": "78f2d5294aa459929cd9555cb94471845d36de7f991680acb812a898abd4c3fe"
+    },
+    {
+      "kind": "spot-check",
+      "path": "/Users/shashank/Documents/Codex/2026-09-11/if/work/codex-opencode-workers-spot-check.json",
+      "sha256": "8e74a6d6ef91c3906c301e5ff439f5d594a4c84d912ae7549c96e25170871b91"
+    }
+  ],
+  "gaps": [
+    "integration track evidence is not included in the receipt",
+    "test trace is incomplete",
+    "unit track evidence is not included in the receipt"
+  ],
+  "exceptions": [
+    "Live OpenCode/DeepSeek invocation was not authorized and is not evidence for this receipt.",
+    "The supplied plugin validator is blocked locally because PyYAML is unavailable; structural JSON validation passed instead.",
+    "This projectless artifact has no git revision; the receipt uses an explicit local-uncommitted revision label."
+  ]
+}
