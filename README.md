@@ -1,140 +1,119 @@
 # codex opencode workers
 
-codex has native subagents. opencode has local sessions and the models you already configured there. those are different systems, and pretending otherwise makes a mess.
+run a bounded opencode job from codex without pretending it is a codex subagent.
 
-this plugin gives codex one deliberate way to hand a bounded job to a local opencode worker. it creates a detached git worktree, starts an opencode session against that worktree, and keeps a small local ledger so you can check, resume, cancel, or retrieve the result later.
+`opencode_job` is a local mcp bridge. it makes a detached worktree for one allowed repository, sends a prompt to your already-running opencode server, and saves a small job receipt locally. you can later inspect the job, wait for it, collect a bounded summary or patch, send a follow-up, or cancel it.
 
-the bridge is small on purpose. it does not turn opencode into codex's global model provider. it does not manufacture a native codex child task. it does not read your opencode credentials. it does not spray worker transcripts back into the chat.
+this exists because codex and opencode have separate runtimes. codex keeps its own model selection. the bridge sends a specific job to the provider and model configured in opencode. opencode keeps its own credentials and sessions.
 
-it is an external worker bridge. that distinction matters.
+## what runs where
 
-## what it does
+1. codex calls `opencode_job` over mcp.
+2. the bridge checks the server address, model, repository root, and consent before it creates a worktree.
+3. it creates a detached worktree below its state directory and opens an opencode session in that worktree.
+4. opencode performs the job with its configured provider.
+5. the bridge records the session, state, content hashes, and an optional bounded result in sqlite.
 
-the plugin exposes one mcp tool: `opencode_job`.
+the bridge does not start, restart, or kill opencode. start and own that process yourself.
 
-use it to:
+## before you install it
 
-- delegate one bounded task to a locally running opencode session
-- check a recorded job's state or wait for it for a bounded time
-- retrieve a bounded worker summary or a revision-bound patch
-- send a follow-up to the same completed session
-- cancel a job
-- disable new delegation immediately, then explicitly re-enable it later
+you need node.js 24+, git, codex with local-plugin support, and a working local opencode setup. the default model IDs in `config.example.json` are opencode go deepseek defaults. they are not credentials and they do not make a provider available by magic.
 
-every delegate request needs an explicit `sendWorkspaceToProvider: true` consent flag. requesting a patch needs another explicit consent flag. that is not ceremony. opencode and its configured provider may read files in the worktree you hand it.
-
-## the shape of the system
-
-```text
-codex
-  │
-  │ MCP: opencode_job
-  ▼
-codex-opencode-workers
-  ├── policy gate
-  │   ├── loopback-only opencode URL
-  │   ├── allowed repository roots
-  │   ├── allowed provider/model IDs
-  │   └── explicit consent checks
-  ├── SQLite job ledger
-  │   └── request ID → job → session → worktree → receipt
-  ├── detached git worktree
-  │   └── isolated execution surface for one job
-  └── local opencode HTTP server
-      └── configured external model provider
-```
-
-the plugin starts no processes. start opencode yourself. the bridge only talks to an `http` loopback address (`127.0.0.1`, `localhost`, or `::1`). it rejects remote endpoints before any job is sent.
-
-the ledger lives under `~/.codex/opencode-workers` by default. it stores job ids, state, content hashes, session ids, worktree paths, a redacted bounded summary, and a revision-bound patch. it deliberately does not store raw task text, provider credentials, full worker logs, or full transcripts.
-
-## requirements
-
-- macos, linux, or another environment where node.js and git work
-- node.js 24 or newer
-- a local opencode installation
-- an existing opencode provider/model configuration
-- a git repository you trust enough to let the configured provider read
-- codex with local plugin support
-
-this repository ships defaults for opencode go's deepseek model ids. they are policy defaults, not credentials and not a promise that a provider is available on your machine.
-
-## setup
-
-### 1. start opencode on loopback
+start opencode on loopback:
 
 ```sh
 opencode serve --hostname 127.0.0.1 --port 4096
 ```
 
-keep this process running while the bridge is in use. the bridge will not launch, restart, or kill it.
+the bridge accepts only `http` loopback addresses: `127.0.0.1`, `localhost`, or `::1`.
 
-### 2. clone the plugin and install its dependencies
+## install
+
+clone the repository into the source directory used by your personal codex marketplace:
 
 ```sh
 git clone https://github.com/shashank-sn/codex-opencode-workers.git ~/plugins/codex-opencode-workers
 cd ~/plugins/codex-opencode-workers
-npm install
 ```
 
-the repository has no runtime npm dependencies today. running `npm install` still gives you a normal local package setup and a lockfile if future versions add one.
+create `~/.agents/plugins/marketplace.json` if you do not already have one. if you do, add only the object inside `plugins` below:
 
-### 3. create the bridge policy
+```json
+{
+  "name": "personal",
+  "interface": {
+    "displayName": "Personal"
+  },
+  "plugins": [
+    {
+      "name": "codex-opencode-workers",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-opencode-workers"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+```
+
+the default personal marketplace resolves `./plugins/...` from your home directory. install the plugin, then start a new codex task so its mcp server and skill definitions load:
+
+```sh
+codex plugin add codex-opencode-workers@personal
+```
+
+## configure the bridge
+
+the bridge reads non-secret policy from `~/.codex/opencode-workers/config.json` by default.
 
 ```sh
 mkdir -p ~/.codex/opencode-workers
 cp config.example.json ~/.codex/opencode-workers/config.json
 ```
 
-edit `~/.codex/opencode-workers/config.json`. set `allowedRoots` to the absolute paths that may be delegated. leave the URL on loopback.
+set an absolute repository root you are willing to send to the configured provider. keep the URL on loopback.
 
 ```json
 {
   "baseUrl": "http://127.0.0.1:4096",
   "enabled": true,
-  "allowedRoots": ["/Users/you/src/a-repository-you-trust"],
+  "allowedRoots": ["/Users/you/src/repository-you-trust"],
   "models": ["opencode-go/deepseek-v4-flash"],
   "defaultModel": "opencode-go/deepseek-v4-flash"
 }
 ```
 
-you can override the config location with `OPENCODE_WORKERS_CONFIG`. the other supported overrides are `OPENCODE_WORKERS_URL`, `OPENCODE_WORKERS_ALLOWED_ROOTS`, `OPENCODE_WORKERS_STATE_DIR`, `OPENCODE_WORKERS_MODELS`, and `OPENCODE_WORKERS_DEFAULT_MODEL`.
+the plugin never reads `auth.json`, accepts API keys, or forwards your environment secrets. opencode owns provider authentication.
 
-do not put api keys in this file. credentials remain in opencode's own configuration; this plugin neither reads `auth.json` nor accepts provider keys.
+set `OPENCODE_WORKERS_CONFIG` when you want the policy somewhere else. `OPENCODE_WORKERS_URL`, `OPENCODE_WORKERS_ALLOWED_ROOTS`, `OPENCODE_WORKERS_STATE_DIR`, `OPENCODE_WORKERS_MODELS`, and `OPENCODE_WORKERS_DEFAULT_MODEL` override the corresponding settings.
 
-### 4. register the local plugin
+## run a job
 
-add the cloned directory to your local codex marketplace, then install it:
-
-```sh
-codex plugin add codex-opencode-workers@personal
-```
-
-the normal personal-marketplace layout keeps the source at `~/plugins/codex-opencode-workers/` and registers it in `~/.agents/plugins/marketplace.json`. start a new codex task after installation so the MCP tool and skill reload.
-
-if you prefer an archive instead of a clone, run `npm run pack`, extract the resulting archive into that trusted plugin source directory, and register it the same way. [packaging details](PACKAGING.md) cover the exact contents.
-
-## using the tool
-
-the `delegate-opencode-worker` skill helps codex use the tool safely. the first call needs a fresh `requestId`, an allowed repository root, a bounded task, and explicit consent.
+use a fresh `requestId` for every state-changing call. delegate calls also need an explicit statement that the worker may read the worktree and send relevant files to its configured provider.
 
 ```json
 {
   "action": "delegate",
   "requestId": "docs-audit-2026-09-11-01",
-  "repository": "/Users/you/src/a-repository-you-trust",
-  "task": "inspect the README for setup mistakes. do not edit files. return the concrete findings.",
-  "consent": {
-    "sendWorkspaceToProvider": true
-  }
+  "repository": "/Users/you/src/repository-you-trust",
+  "task": "inspect the README for setup mistakes. do not edit files. return concrete findings.",
+  "consent": { "sendWorkspaceToProvider": true }
 }
 ```
 
-the response contains a job id and a receipt. use that job id for the rest of the lifecycle.
+the response gives you a job id. use it to wait for the worker:
 
 ```json
 { "action": "await", "jobId": "ocj_...", "waitMs": 25000 }
 ```
+
+ask for a summary, or opt in again before returning a patch to codex:
 
 ```json
 {
@@ -145,29 +124,23 @@ the response contains a job id and a receipt. use that job id for the rest of th
 }
 ```
 
-`followup` only targets the recorded, idle session. it cannot switch repositories or models. `cancel` is idempotent. repeat the same state-changing request with the same request ID and the bridge returns the saved result instead of dispatching another provider call.
+the remaining actions are direct:
 
-## safety model
+- `status` reconciles a recorded job with opencode.
+- `await` polls for at most 25 seconds.
+- `followup` sends a message only to the recorded idle session. it cannot change the job's model or repository.
+- `cancel` aborts that recorded session. replaying the same request is safe.
+- `disable` blocks new delegation immediately. `enable` requires `enableBridge: true`.
 
-the safety model is simple and deliberately narrow:
+## safety boundary
 
-- only an explicitly configured loopback opencode server is allowed
-- only repositories below configured, canonical root paths are allowed
-- only configured provider/model IDs are allowed
-- each worker gets a detached worktree, never the caller's checkout
-- the job ledger makes delegate, follow-up, and cancel replays safe
-- patch return requires a second opt-in and is bounded to the recorded base revision
-- `disable` blocks future delegate calls without touching the provider
+a detached worktree keeps a worker out of your active checkout. it does not limit filesystem access.
 
-the worktree protects the caller's checkout from accidental cross-contamination. it is not an operating-system sandbox. a worker can still read files made available in that worktree and its configured provider can receive what opencode reads. do not delegate a repository whose contents you would not send to that provider.
+the configured provider can receive any file opencode reads in that worktree. only allow repositories you are comfortable sending there.
 
-to stop new delegation right now:
+the bridge leaves raw task text, provider credentials, complete transcripts, and worker logs out of its ledger. the ledger keeps the job id, state, hashes, worktree path, session id, and an optional bounded result.
 
-```json
-{ "action": "disable", "requestId": "stop-opencode-workers-01" }
-```
-
-this does not abort a job already running. use `cancel` for that job. re-enabling needs `enableBridge: true` consent. the `enabled: false` setting in the local config file is the persistent kill switch.
+`enabled: false` in the config is the persistent kill switch. an `opencode_job` call with `action: "disable"` does the same thing. neither cancels a running job; call `cancel` for that job.
 
 ## development
 
@@ -176,10 +149,6 @@ npm test
 npm run pack:check
 ```
 
-the test suite uses a fake local opencode http server. it does not start opencode, read authentication state, call deepseek, or change repositories outside temporary test fixtures.
+the tests use a fake local opencode HTTP server. they do not call a provider, read credentials, or write outside temporary test repositories.
 
-`DESIGN.md` records the implementation decisions and observable guarantees. this README is the operating guide; that document is the receipt for why the boundaries look like this.
-
-## license
-
-[mit](LICENSE). use it, change it, and ship it. just do not confuse a local worktree with a sandbox.
+`DESIGN.md` explains the implementation choices and the evidence behind them. [MIT](LICENSE).
