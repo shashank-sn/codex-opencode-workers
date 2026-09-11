@@ -2,12 +2,25 @@
   "name": "codex-opencode-workers",
   "version": "0.1.4",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "engines": {
     "node": ">=24.0.0"
   },
   "scripts": {
     "test": "node --test server/test/*.test.mjs",
-    "start": "node server/src/index.mjs"
-  }
+    "start": "node server/src/index.mjs",
+    "pack:check": "npm_config_cache=.npm-cache npm pack --dry-run",
+    "pack": "mkdir -p dist && npm_config_cache=.npm-cache npm pack --pack-destination dist"
+  },
+  "files": [
+    ".codex-plugin/",
+    ".mcp.json",
+    "config.example.json",
+    "DESIGN.md",
+    "PACKAGING.md",
+    "README.md",
+    "server/src/",
+    "skills/"
+  ]
 }

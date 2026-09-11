@@ -1,6 +1,6 @@
 {
   "name": "codex-opencode-workers",
-  "version": "0.1.4+codex.20260911073740",
+  "version": "0.1.4",
   "description": "Delegate bounded OpenCode model tasks to local OpenCode sessions from Codex.",
   "author": {
     "name": "Local developer"
